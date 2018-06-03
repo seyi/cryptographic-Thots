@@ -14,7 +14,9 @@
 		 test_search/3,inner_search_helper/3,search/3,
 		 test_perfect_powers/2,is_perfect_power/1,
 		 test_gcd/3,test_is_relative_prime/2,
-		 test_check_similarity/2,call_relative_prime/2]).
+		 test_check_similarity/2,call_relative_prime/2,
+		 test_gcd/2]
+		).
 -record(crypto_system,{type}).
 -record(intractable_cpu_problems,{factoring,rsap,qrp,sqroot,
 								  dlp,gdlp,dhp,gdhp,subset_sum}).
@@ -333,4 +335,14 @@ gcd(euclid,X,Y) when X =:= 0 ->
 
 test_gcd(euclid,X,Y) ->
 	gcd(euclid,X,Y).
+
+gcd(euclid,[H|T]) ->
+	gcd(euclid,H,gcd(euclid,T));
+  
+gcd(euclid,[]) -> 0.
+
+test_gcd(euclid,L) ->
+	gcd(euclid,L).
+
+
 
