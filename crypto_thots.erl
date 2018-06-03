@@ -12,7 +12,9 @@
 		 hd_fac_is_prime/1,test_prime_facts/1,test_perfect_square/1,
 		 generate/2,test_generate/2,
 		 test_search/3,inner_search_helper/3,search/3,
-		 test_perfect_powers/2,is_perfect_power/1]).
+		 test_perfect_powers/2,is_perfect_power/1,
+		 test_gcd/3,test_is_relative_prime/2,
+		 test_check_similarity/2,call_relative_prime/2]).
 -record(crypto_system,{type}).
 -record(intractable_cpu_problems,{factoring,rsap,qrp,sqroot,
 								  dlp,gdlp,dhp,gdhp,subset_sum}).
@@ -168,6 +170,7 @@ hd_fac_is_prime(N) ->
       io:format("~p is composite? ~p~n",
 				[N,crypto_thots:pf3([ (X5) || X5<- crypto_thots:split(N) ] )]) end,lists:seq(1,100)) .
 
+%% crypto_thots:test_prime_facts(10).
 test_prime_facts(N) ->
    [ io:format("At ~p pfac are ~p~n",[X,crypto_thots:prime_factorization([hd(crypto_thots:split(X))])]) || X <- lists:seq(1,N),crypto_thots:is_composite(X)].
 
@@ -251,4 +254,83 @@ test_generate(From,To) ->
 test_perfect_square(N) ->
   [io:format("~p is a perfect square with root ~p~n",[X,(floor(math:sqrt(X)))]) || X <- lists:seq(1,N),
 													  (math:sqrt(X) - (floor(math:sqrt(X)) + float(0.0001))) < float(0.0001),X > 1].
+
+
+call_relative_prime(A,B) ->
+	AS = split(A),
+	BS = split(B),
+	case AS of
+		[ ] -> 
+			case BS of
+				[] -> true;
+                 _ -> is_relative_prime([{1,A}],BS,[{1,A}],BS)
+			end;
+		_ -> 
+			case BS of
+				[] -> is_relative_prime(AS,[{1,B}],AS,[{1,B}]);
+                 _ -> is_relative_prime(AS,BS,AS,BS)
+			end	
+	end.
+	
+			  
+		 
+	
+
+is_relative_prime([D1H|D1T],[D2H|D2T],D1Acc,D2Acc) ->
+	{AF1,AF2} = D1H,
+	{BF1,BF2} = D2H,
+	AFacs = [AF1,AF2],
+	BFacs = [BF1,BF2],
+	io:format("D1H => ~p~n", [D1H]),
+	case check_similarity(D1H,D2H) of 
+		true -> false;
+		false -> is_relative_prime(D1H,D2T,D1T,D2Acc)
+	end;
+
+is_relative_prime([],_,_,_) -> true;
+
+
+is_relative_prime({X,Y} = DElem,[D2H|D2T],D1TAcc,D2Acc) ->
+	io:format("checking similarity of ~p and ~p ~n", 
+				  [DElem,D2H]),
+	case check_similarity(DElem,D2H) of
+		
+	 	  true -> false;
+		   false -> is_relative_prime(DElem,D2T,D1TAcc,D2Acc)
+	end;
+
+is_relative_prime({X,Y} = DElem,[],D1TAcc,D2Acc) ->
+	io:format("~p => DElem  D1TailAcc =>~p D2Accc => ~p~n", [DElem,D1TAcc,D2Acc]),
+	is_relative_prime(D1TAcc,D2Acc,D1TAcc,D2Acc).
+
+
+
+
+
+check_similarity({A,B},{C,D}) when
+   (A =:= C) or (A =:= D) or (B =:= C) or (B =:= D)-> true;
+check_similarity(_,_) -> false.
+
+test_check_similarity(A,B) ->
+	 check_similarity(A,B).
+
+cf(A,B) ->
+	R = [ X || X<-B ,lists:member(X,A)],
+	case R of
+		[] -> false;
+		_ -> {ok,{A,B}}
+	end.
+
+ test_is_relative_prime(A,B) ->
+%% 	{J,K} = hd(split(A)),
+%% 	{L,M} = hd(split(B)),
+%% 	is_relative_prime([J,K],[L,M]).
+    hello.
+gcd(euclid, X, Y) when X > 0 ->
+	gcd(euclid,Y rem X, X);
+gcd(euclid,X,Y) when X =:= 0 ->
+	Y.
+
+test_gcd(euclid,X,Y) ->
+	gcd(euclid,X,Y).
 
