@@ -15,7 +15,8 @@
 		 test_perfect_powers/2,is_perfect_power/1,
 		 test_gcd/3,test_is_relative_prime/2,
 		 test_check_similarity/2,call_relative_prime/2,
-		 test_gcd/2]
+		 test_gcd/2,test_least_common_multiple/2,
+		 test_least_common_multiple/1]
 		).
 -record(crypto_system,{type}).
 -record(intractable_cpu_problems,{factoring,rsap,qrp,sqroot,
@@ -343,6 +344,36 @@ gcd(euclid,[]) -> 0.
 
 test_gcd(euclid,L) ->
 	gcd(euclid,L).
+
+least_common_multiple(X,Y) when X > 0 ->
+	round((X*Y)/gcd(euclid,X,Y));
+
+least_common_multiple(X,Y) when X =:= 0 ->
+	error("bad argument").
+
+test_least_common_multiple(X,Y) ->
+	least_common_multiple(X,Y).
+
+
+%% crypto_thots:test_least_common_multiple([2, 5, 6, 1, 9]).
+%% 0
+%% 103> Z1 = 2*5 /crypto_thots:test_gcd(euclid,2,5).             
+%% 10.0
+%% 104>  10*6 /crypto_thots:test_gcd(euclid,10,6).  
+%% 30.0
+%% 105>  30*9 /crypto_thots:test_gcd(euclid,30,9).
+%% 90.0
+
+
+
+ least_common_multiple(L) ->
+	
+	lists:foldl(fun(A,Acc) -> crypto_thots:test_least_common_multiple(A,Acc) end,hd(L),L).
+	
+
+ 
+ test_least_common_multiple(L) ->
+ 	least_common_multiple(L).
 
 
 
