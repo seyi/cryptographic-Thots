@@ -16,7 +16,8 @@
 		 test_gcd/3,test_is_relative_prime/2,
 		 test_check_similarity/2,call_relative_prime/2,
 		 test_gcd/2,test_least_common_multiple/2,
-		 test_least_common_multiple/1]
+		 test_least_common_multiple/1,multiply/4,
+		 modular_inverse/3]
 		).
 -record(crypto_system,{type}).
 -record(intractable_cpu_problems,{factoring,rsap,qrp,sqroot,
@@ -375,5 +376,51 @@ test_least_common_multiple(X,Y) ->
  test_least_common_multiple(L) ->
  	least_common_multiple(L).
 
+%%    Mod = round(math:pow(10,9) + 7),
+%%     round( 
+%%           ((
+%%             (round(X rem Mod)
+%%                * round(Y rem Mod) 
+%%              ) 
+%%                *Mod
+%%            ) 
+%%              /  (gcd(euclid,(X rem Mod),(Y rem Mod))))  / Mod
+%%          );
+    
+%%RSA-576
+%%  1881988129206079638386972394616504398071635633794173827007
+%%    6335642298885971523466548531906060650474304531738801130339
+%%    6716199692321205734031879550656996221305168759307650257059
 
 
+%%RSA-155
+%%1094173864157052742180970732204035761200373294544920599091 3842131476349984288934784717997257891267332497625752899781 833797076537244027146743531593354333897.
+
+extended_euclid(A,B) when B > 0 ->
+	X2 = 1,X1 = 0,Y2 = 0, Y1 = 1,
+	Q  = A div  B;
+extended_euclid(A,B) when B =:= 0 ->
+		%d=A,x=1,y=0 return {d,x,a}
+		{A,1,0};
+
+
+extended_euclid(A,B)  when B > A-> 
+	{error,"Bad Argument"}.
+
+multiply(mod,A,B,ModC) ->
+	P1 = (A rem ModC) ,
+	P2 = (B rem ModC),
+	(P1 * P2) rem ModC.
+
+modular_inverse(naive,A,ModC) ->
+	modular_inverse(naive,A,0,ModC).
+
+modular_inverse(naive,A,Counter,ModC) when Counter =< (ModC-1)->
+	case multiply(mod,A,Counter,ModC) of
+       1 -> Counter ;
+	   _ -> modular_inverse(naive,A,Counter+1,ModC)
+	end;
+
+modular_inverse(naive,A,Counter,ModC) when Counter =:= (ModC) ->
+	no_inverse.
+	
