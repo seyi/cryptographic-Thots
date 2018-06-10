@@ -16,3 +16,5 @@ Contains the following algorithm in pure Erlang:
 - Euclid algorithm for multiple integers
 - Least Common Multiple for two Integers
 - Least common multiple for a list of integers
+- Modular multiplication
+- Naive Modulo Inverse
