@@ -17,11 +17,13 @@
 		 test_check_similarity/2,call_relative_prime/2,
 		 test_gcd/2,test_least_common_multiple/2,
 		 test_least_common_multiple/1,multiply/4,
-		 modular_inverse/3]
+		 modular_inverse/3,extended_euclid/2,verify/4]
 		).
 -record(crypto_system,{type}).
 -record(intractable_cpu_problems,{factoring,rsap,qrp,sqroot,
 								  dlp,gdlp,dhp,gdhp,subset_sum}).
+-record(ext_euc_result,{d,x,y}).
+-record(ext_euc_args,{x1,x2,y1,y2}).
 
 
 
@@ -396,16 +398,41 @@ test_least_common_multiple(X,Y) ->
 %%RSA-155
 %%1094173864157052742180970732204035761200373294544920599091 3842131476349984288934784717997257891267332497625752899781 833797076537244027146743531593354333897.
 
-extended_euclid(A,B) when B > 0 ->
-	X2 = 1,X1 = 0,Y2 = 0, Y1 = 1,
-	Q  = A div  B;
-extended_euclid(A,B) when B =:= 0 ->
+extended_euclid(A,B) ->
+	extended_euclid(A,B,1,0,0,1).
+extended_euclid(A,B,X2,X1,Y2,Y1) when B > 0 ->
+	Q  = A div  B,
+	R = A - (Q*B),
+	X = X2 -(Q*X1),
+	Y = Y2 -(Q*Y1),
+	io:format("A:~p, B:~p, X2:~p,X1:~p,Y2:~p,Y1:~p~n", [A,B,X2,X1,Y2,Y1]),
+	extended_euclid(B,R,X1,X,Y1,Y);
+
+	  
+extended_euclid(A,B,X2,X1,Y2,Y1) when B =:= 0 ->
 		%d=A,x=1,y=0 return {d,x,a}
-		{A,1,0};
+		
+		#ext_euc_result{d=A,x=X2,y=Y2};
 
 
-extended_euclid(A,B)  when B > A-> 
-	{error,"Bad Argument"}.
+
+extended_euclid(A,B,_,_,_,_)  when B > A-> 
+	{error,"Bad Argument"};
+
+extended_euclid(A,_,X2,X1,Y2,Y1) ->
+	#ext_euc_result{d=A,x=X2,y=Y2}.
+ 
+verify(ext_euclid,A,B,Res) when is_record(Res,ext_euc_result) ->
+	
+	#ext_euc_result{ d = D,x = X,y = Y}   = Res,D,X,Y,
+	case  ((gcd(euclid,A,B)) =:= D) andalso ((A*X) + (B*Y) =:= D) of
+		true -> {ok,passed};
+		false -> {assertion_failed}
+	end;
+
+verify(ext_euclid,_,_,_) ->
+	error("bad argument").
+
 
 multiply(mod,A,B,ModC) ->
 	P1 = (A rem ModC) ,
