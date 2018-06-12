@@ -14,6 +14,7 @@ Contains the following algorithm in pure Erlang:
 - Test for relative primes
 - Euclid algorithm for two integers
 - Euclid algorithm for multiple integers
+- Extended Euclid algorithm
 - Least Common Multiple for two Integers
 - Least common multiple for a list of integers
 - Modular multiplication
