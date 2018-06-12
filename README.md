@@ -19,3 +19,4 @@ Contains the following algorithm in pure Erlang:
 - Least common multiple for a list of integers
 - Modular multiplication
 - Naive Modulo Inverse
+- Modulo Inverse using Extended Euclid Algorithm
