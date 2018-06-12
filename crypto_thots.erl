@@ -439,8 +439,15 @@ multiply(mod,A,B,ModC) ->
 	P2 = (B rem ModC),
 	(P1 * P2) rem ModC.
 
+
 modular_inverse(naive,A,ModC) ->
-	modular_inverse(naive,A,0,ModC).
+	modular_inverse(naive,A,0,ModC);
+modular_inverse(ext_euclid,A,B) ->
+	Result = extended_euclid(A,B,1,0,0,1),
+    case Result#ext_euc_result.d /= 1 of
+			true -> inverse_does_not_occur;
+			false -> {ok,Result#ext_euc_result.x}
+	end.
 
 modular_inverse(naive,A,Counter,ModC) when Counter =< (ModC-1)->
 	case multiply(mod,A,Counter,ModC) of
@@ -450,4 +457,6 @@ modular_inverse(naive,A,Counter,ModC) when Counter =< (ModC-1)->
 
 modular_inverse(naive,A,Counter,ModC) when Counter =:= (ModC) ->
 	no_inverse.
+
+
 	
