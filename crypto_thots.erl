@@ -466,6 +466,13 @@ convert2(base2,Number) ->
 	lists:reverse([N - $0 || N <-  integer_to_list(Number,2)]).
 
 %%Repeated square and multiply algorithm
+-spec modular_exponent(RSMA,A,K,ModN) -> Integer when
+		  RSMA :: atom(),
+		  A :: integer(),
+		  K :: integer(),
+		  ModN :: integer(),
+		  Integer ::integer().
+
 modular_exponent(rsma,A,K,ModN) when K =:= 0 ->
 	modular_exponent(rsma,A,[],1,1,ModN);
 modular_exponent(rsma,A,K,ModN) ->
