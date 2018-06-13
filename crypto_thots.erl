@@ -460,6 +460,7 @@ modular_inverse(naive,A,Counter,ModC) when Counter =:= (ModC) ->
 	no_inverse.
 
 
+
 convert(base2,Number) ->
 	lists:reverse([N - $0 || N <-  integer_to_list(Number,2)]).
 
@@ -496,4 +497,5 @@ modular_exponent(rsma,_,K,_,_,_) when (length(K) == 0) ->
 
 modular_exponent(rsma,_,_,_,B,_) ->
 	B.
+
 	
