@@ -17,7 +17,8 @@
 		 test_check_similarity/2,call_relative_prime/2,
 		 test_gcd/2,test_least_common_multiple/2,
 		 test_least_common_multiple/1,multiply/4,
-		 modular_inverse/3,extended_euclid/2,verify/4]
+		 modular_inverse/3,extended_euclid/2,verify/4,convert2/2,
+		 modular_exponent/4]
 		).
 -record(crypto_system,{type}).
 -record(intractable_cpu_problems,{factoring,rsap,qrp,sqroot,
@@ -459,4 +460,45 @@ modular_inverse(naive,A,Counter,ModC) when Counter =:= (ModC) ->
 	no_inverse.
 
 
+<<<<<<< HEAD
+
+convert2(base2,Number) ->
+	lists:reverse([N - $0 || N <-  integer_to_list(Number,2)]).
+
+%%Repeated square and multiply algorithm
+modular_exponent(rsma,A,K,ModN) when K =:= 0 ->
+	modular_exponent(rsma,A,[],1,1,ModN);
+modular_exponent(rsma,A,K,ModN) ->
+	modular_exponent(rsma,A,convert2(base2,K),1,1,ModN).
+
+
+	
+modular_exponent(rsma,A,KbinList,Counter,B, N) 
+  						when Counter =< length(KbinList)  ->
+	%io:format("A val = ~p B val ~p K = ~p~n", [A,B,lists:nth(Counter, KbinList)]),
+	case (Counter == 1) andalso lists:nth(1, KbinList) =:= 1 of
+		true -> modular_exponent(rsma,A,KbinList,Counter+1,A,N);
+		false ->
+			
+			Acomp = (round(math:pow(A,2)) rem N),
+			case (lists:nth(Counter, KbinList) =:= 1) of
+				true -> 
+					Bcomp = A * B rem N,
+					
+					modular_exponent(rsma,Acomp,KbinList,Counter+1,Bcomp,N);
+				false -> 
+					
+					modular_exponent(rsma,Acomp,KbinList,Counter+1,B,N)
+			end
+	end;
+			
+	
+modular_exponent(rsma,_,K,_,_,_) when (length(K) == 0) -> 
+	1;
+
+modular_exponent(rsma,_,_,_,B,_) ->
+	B.
+
+=======
+>>>>>>> master
 	
