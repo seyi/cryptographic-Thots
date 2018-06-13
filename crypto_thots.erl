@@ -459,20 +459,21 @@ modular_inverse(naive,A,Counter,ModC) when Counter =< (ModC-1)->
 modular_inverse(naive,A,Counter,ModC) when Counter =:= (ModC) ->
 	no_inverse.
 
-
-<<<<<<< HEAD
-
+-spec convert2(BaseType,Number) -> List when
+		  BaseType :: atom(),
+		  Number :: integer(),
+		  List :: list().
 convert2(base2,Number) ->
 	lists:reverse([N - $0 || N <-  integer_to_list(Number,2)]).
 
 %%Repeated square and multiply algorithm
+
 -spec modular_exponent(RSMA,A,K,ModN) -> Integer when
 		  RSMA :: atom(),
 		  A :: integer(),
 		  K :: integer(),
 		  ModN :: integer(),
 		  Integer ::integer().
-
 modular_exponent(rsma,A,K,ModN) when K =:= 0 ->
 	modular_exponent(rsma,A,[],1,1,ModN);
 modular_exponent(rsma,A,K,ModN) ->
@@ -505,7 +506,4 @@ modular_exponent(rsma,_,K,_,_,_) when (length(K) == 0) ->
 
 modular_exponent(rsma,_,_,_,B,_) ->
 	B.
-
-=======
->>>>>>> master
 	
