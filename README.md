@@ -20,3 +20,4 @@ Contains the following algorithm in pure Erlang:
 - Modular multiplication
 - Naive Modulo Inverse
 - Modulo Inverse using Extended Euclid Algorithm
+- Fast Modular exponentiantion
