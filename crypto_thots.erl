@@ -18,13 +18,25 @@
 		 test_gcd/2,test_least_common_multiple/2,
 		 test_least_common_multiple/1,multiply/4,
 		 modular_inverse/3,extended_euclid/2,verify/4,convert2/2,
-		 modular_exponent/4]
+		 modular_exponent/4,is_quad_res/2,is_even/1,is_odd/1,jacobi/2,
+		 verify/2]
 		).
+-define(NOT_YET_IMPLEMENTED,not_yet_implemented).
+-define(V_FAIL,verify_failure).
+-define(UTILITY_CODE,"%%Utility code
+%% TODO: TO BE IN SEPERATE MODULE").
+-define(UNDEFINED_PROPERTY_CONDITION,"Condition not defined for property ~p~n").
 -record(crypto_system,{type}).
 -record(intractable_cpu_problems,{factoring,rsap,qrp,sqroot,
 								  dlp,gdlp,dhp,gdhp,subset_sum}).
 -record(ext_euc_result,{d,x,y}).
 -record(ext_euc_args,{x1,x2,y1,y2}).
+-record(jacobi_prop, {m,n,a,b,results_spec=[0,1,-1],result::jacobi_result(),gcd_a_n,
+					  numer_list,denom_list}).
+
+-type odd_prime() :: odd_prime().
+-type odd_number() :: odd_number().
+-type jacobi_result() :: jacobi_result().
 
 
 
@@ -435,6 +447,7 @@ verify(ext_euclid,_,_,_) ->
 	error("bad argument").
 
 
+
 multiply(mod,A,B,ModC) ->
 	P1 = (A rem ModC) ,
 	P2 = (B rem ModC),
@@ -506,4 +519,253 @@ modular_exponent(rsma,_,K,_,_,_) when (length(K) == 0) ->
 
 modular_exponent(rsma,_,_,_,B,_) ->
 	B.
+
+-spec jacobi_compute(A,P) -> Number when
+		  A :: integer(),
+		  P :: odd_prime(),
+		  Number :: integer().
+jacobi_compute(A,P) ->
+	0.
+
+
+-spec is_quad_res(N,P) -> Boolean
+     when 
+		  N :: integer(),
+		  P :: odd_prime(),
+		  Boolean :: boolean().
+is_quad_res(N,P) ->
+	case Res = (round(math:pow(N,(P-1) div 2)) rem P) of
+		1 -> {true, Res};
+		_ -> {false , Res}
+     end.
+
+%%Jacobi Properties
+-spec jacobi(Args,N) -> Number when
+		Args ::[number()] | integer(),
+		N    :: [odd_number()] | odd_number(),
+		Number :: jacobi_result.
+ jacobi(A,N) when is_integer(A),is_integer(N) -> 
+	2;
+
+jacobi(A,N) when is_list(N) andalso is_integer(A) ->
+		3;
+jacobi(Args,N) when is_list(Args) andalso is_integer(N) -> 
+		4;
+jacobi(Args,N) when is_list(Args) andalso is_list(N) -> 
+ 5.	
+
+%%Utility code
+%% TODO: TO BE IN SEPERATE MODULE
+-spec verify(Property,Args) -> Bool when
+		  Property :: atom(),
+		  Args :: [term()],
+		  Bool :: boolean().
+
+verify(jacobi_prop,Args) when length(Args) > 1 ->
+	JProp = #jacobi_prop{},
+	{ok,Numer,N,AProduct,NProduct} = process_args(jacobi,Args),
+	 denom_check(jacobi,N,{(fun(A) -> is_even(A) end),{ok,true},{ok,false}},
+				(fun(A) -> is_composite(A) end)) ,
+		result_check(jacobi,AProduct,NProduct),
+	prop_check(jacobi,1,Numer,N),
+	prop_check(jacobi,2,Numer,NProduct) ,
+	prop_check(jacobi,3,AProduct,N),
+	prop_check(jacobi,4,[5,8],33);
+
+%%numerator and prime check (Definition).
+verify(jacobi_prop,Args) when length(Args) =:= 1 ->
+	?NOT_YET_IMPLEMENTED;
+verify(_,Args) -> 
+	{bad_argument,Args}.
+
+-spec prop_check(Jacobi,Num,A,N) -> {Ok,VerifyAtom} when
+		  Jacobi 		:: atom(),
+		  Num			:: integer(),
+		  A		 		:: [integer()],
+		  N 				:: integer() | [integer()],
+		  Ok				:: atom(),
+		  VerifyAtom 	:: atom().
+prop_check(jacobi,Num,A,N) when Num =:= 1 -> 
+	case is_list(A) andalso length(A) > 1 of
+		true ->
+			Res = lists:foldl(fun(Elem,Acc) ->
+				jacobi(Elem,N) * Acc
+				end, 1,A),
+			A2 = multiply(list,A),
+			Res2 = jacobi(A2,N),
+			debug("Jacobi property (ii) jacobi(~p/~p) == ",
+				  [A2,multiply(list,N)]),
+				%[ io:format("~p/~p  ",[X,multiply(list,N)]) || X<- A],
+				%io:format(" = ~p~n",[(Res == Res2)]);
+			print_multiple_numerator_vs_single_denom(A,N,"*",length(A),1),
+			io:format(" = ~p~n",[(Res == Res2)]);
+        false ->
+           debug("Jacobi Property (ii) Test Requirement : Numerator must be list~n",[])
+        end;
+
+prop_check(jacobi,Num,AProduct,N) when Num =:= 2 -> 
+	io:format("AProduct : ~p~n",[AProduct]),
+	Fun = fun(A,B) -> jacobi(A,B) end,
+	Mul_denom_arg_res = apply_across_args(accum_mul,Fun,AProduct,N),
+    case Mul_denom_arg_res =:= jacobi(multiply(list,AProduct),N) of
+		true -> {ok,verify_passed_prop2};
+		false ->{ok,verify_failed_prop2}
+    end;
+
+prop_check(jacobi,Num,A,N) when Num =:= 3  ->
+		
+        case is_list(N) andalso length(N) > 1 of
+			true ->
+			Res = lists:foldl(fun(Elem,Acc) ->
+				jacobi(A,N) * Acc
+				end, 1,N),
+			NProduct = multiply(list,N),
+			Res2 = jacobi(A,NProduct),
+			debug("Jacobi property (iii) jacobi(~p/~p) == ",
+				  [A,multiply(list,N)]),
+				%[ io:format("~p/~p  ",[X,multiply(list,N)]) || X<- A],
+				%io:format(" = ~p~n",[(Res == Res2)]);
+			print_multiple_denumerator_vs_single_numer(N,A,"*",length(N),1),
+			io:format(" = ~p~n",[(Res == Res2)]);
+        false ->
+           debug("Jacobi Property (iii) Test Requirement : Denumerator must be list~n",[])
+        end;
+
+prop_check(jacobi,Num,[A,B],N) when Num =:= 4  ->
+	case A =:= B rem N of
+		true -> 
+				 debug("Jacobi Property(iv) jacobi(~p/~p) == jacobi(~p/~p) = ~p~n",
+							  [A,N,B,N,(jacobi(A,N) =:= jacobi(B,N) )]);
+		false ->debug(?UNDEFINED_PROPERTY_CONDITION,[Num])
+    end;
+
+prop_check(jacobi,_,Num,_) -> {error,unknown_property,Num}.
+
+-spec process_args(Atom,Args) -> {Ok,Numer,N,AProduct,NProduct} when
+		  Atom  	 	:: atom(),
+		  Args  		:: [integer()],
+	      Ok    		:: atom(),
+		  Numer 		:: [integer()],
+	      N     		:: [integer()],
+	      AProduct 	:: integer(),
+		  NProduct 	:: integer().
+process_args(jacobi,Args) ->
+	{Numer,[N]} = lists:split(length(Args)-1,Args),
+	NProduct = lists:foldl(fun(Ele,Acc) -> Ele * Acc end, 1,N),
+	AProduct = lists:foldl(fun(Ele,Acc) -> Ele * Acc end, 1,Numer),
+	{ok,Numer,N,AProduct,NProduct}.
+
+denom_check(jacobi,N,{Condition1,MatchClause1,MatchClause2},Condition2) ->
+	io:format("denom_check called (args: N=~p)~n",[N]),	
+	lists:filter(fun(Elem) -> 
+						 case Condition1(Elem)  of
+							 MatchClause1  ->error("Bad argument denom not odd"); % {jacobi_error,"Bad argument denom not odd"};								 
+						      MatchClause2 -> 
+								  case Condition2(Elem) of
+									  true -> true;
+									  false -> error("Bad argument denom should not be prime") %{jacobi_error,"Bad argument denom should not be prime"}
+								  end								  
+						 end
+				 end,N).
+
+result_check(jacobi,AProduct,NProduct) ->	
+	case jacobi(AProduct,NProduct) of
+		0 -> 
+			debug("result_check(AProduct=~p,NProduct=~p) return:~p~n",[AProduct,NProduct,{ok,true,0}]),
+			{ok,true};
+		1 ->debug("result_check(AProduct=~p,NProduct=~p) return:~p~n",[AProduct,NProduct,{ok,true,1}]), 
+			{ok,true};
+		-1 ->debug("result_check(AProduct=~p,NProduct=~p) return:~p~n",[AProduct,NProduct,{ok,true,-1}]), 
+			{ok,true};
+		Other ->debug("result_check(AProduct=~p,NProduct=~p) return:~p~n",[AProduct,NProduct,{error,illegal_output,Other}]), 
+			{error,illegal_output}
+    end.
+
+ -spec apply_across_args(Accum,Function,Args,N) -> Result when
+ 		  Accum 		:: atom(),
+ 		  Function 	:: function(),
+ 		  Args 		:: [integer()],
+ 		  N     		:: [integer()],
+ 		  Result 	:: integer().
+
+apply_across_args(accum_mul,Function,Args,N) when (length(Args) > 1)  ->
+	lists:foldl(fun(Elem,Acc) ->
+				io:format("Arg ~p N : ~p~n",[Elem,N]),
+				Function(Elem,N) * (Acc)
+				end, 1,Args);
+
+ apply_across_args(accum_mul,Function,Args,N) when (length(Args) == 1) ->
+ 	Function(hd(Args),N);
+ apply_across_args(accum_mul,_,_,N)  ->
+	io:format("N ~p~n",[2*N]),
+	shouldnt_get_here.
+
+
+%%Utility code
+%% TODO: TO BE IN SEPERATE MODULE
+is_even(Number) when is_integer(Number) , Number >= 0 ->
+    {ok,(Number band 1 ) == 0};
+is_even(Number) -> {bad_argument,Number}.
+is_odd(Number) when is_integer(Number) , Number >= 0 ->
+	{ok,(Number band 1) == 1};
+is_odd(Number) -> {bad_argument,Number}.
+
+multiply(list,List) ->
+	lists:foldl(fun(A,Acc) -> 
+					Acc * A		
+				end,1,List).
+
+-spec debug(String,Args) -> NoReturn when
+		  String		:: string(),
+		  Args		:: [term()],
+		  NoReturn  :: no_return().
+debug(String,Args) ->
+  io:format(String,Args).
+
+
+-spec print_multiple_numerator_vs_single_denom(Numer,Denom,Op,L) -> NoReturn when
+	Numer		:: [integer()],
+	Denom		:: integer(),
+	Op			:: term(),
+	L			:: integer(),
+	NoReturn		:: no_return().
+print_multiple_numerator_vs_single_denom(Numer,Denom,Op,L)  ->
+	print_multiple_numerator_vs_single_denom(Numer,Denom,Op,L,0).
+
+print_multiple_numerator_vs_single_denom([H|T],Denom,Op,NumerL,Counter) ->
+	case Counter == NumerL of 
+		true -> io:format("jacobi(~p/~p)  ",[H,multiply(list,Denom)]),
+				print_multiple_numerator_vs_single_denom(T,Denom,Op,NumerL,Counter+1);
+		false -> io:format("jacobi(~p/~p)~p",[H,multiply(list,Denom),list_to_atom(Op)]),
+				print_multiple_numerator_vs_single_denom(T,Denom,Op,NumerL,Counter+1)
+		end;
+
+print_multiple_numerator_vs_single_denom([],Denom,Op,NumerL,Counter) ->
+	io:format(" ").
+
+-spec print_multiple_denumerator_vs_single_numer(Numer,Denom,Op,L) -> NoReturn when
+	Numer		:: integer(),
+	Denom		:: [integer()],
+	Op			:: term(),
+	L			:: integer(),
+	NoReturn		:: no_return().
+print_multiple_denumerator_vs_single_numer(Denom,Numer,Op,L)  ->
+	print_multiple_denumerator_vs_single_numer(Denom,Numer,Op,L,0).
+
+print_multiple_denumerator_vs_single_numer([H|T],Numer,Op,DenomL,Counter) ->
+	case Counter == DenomL of 
+		true -> io:format("jacobi(~p/~p)  ",[Numer,H]),
+				print_multiple_denumerator_vs_single_numer(T,Numer,Op,DenomL,Counter+1);
+		false -> io:format("jacobi(~p/~p)~p",[Numer,H,list_to_atom(Op)]),
+				print_multiple_denumerator_vs_single_numer(T,Numer,Op,DenomL,Counter+1)
+		end;
+
+print_multiple_denumerator_vs_single_numer([],Numer,Op,DenomL,Counter) ->
+	io:format(" ").
+
+
+
+				
+	
+		
 	
