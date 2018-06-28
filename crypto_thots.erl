@@ -18,13 +18,15 @@
 		 test_gcd/2,test_least_common_multiple/2,
 		 test_least_common_multiple/1,multiply/4,
 		 modular_inverse/3,extended_euclid/2,verify/4,convert2/2,
-		 modular_exponent/4,is_quad_res/2,is_even/1,is_odd/1,jacobi/2,
-		 verify/2,quick_test/4,numeric_rep/2,div_till_odd/1,jacobi_helper/3,pow_bin/2]
+		 modular_exponent/4,is_even/1,is_odd/1,jacobi/2,
+		 verify/2,quick_test/4,numeric_rep/2,div_till_odd/1,jacobi_helper/3,pow_bin/2,
+		 legendre/2]
 		).
 -define(NOT_YET_IMPLEMENTED,not_yet_implemented).
 -define(V_FAIL,verify_failure).
 -define(V_PASS,verify_passed).
 -define(JACOBI_BAD_ARG,bad_argument).
+-define(LEGENDRE_BAD_ARG,bad_argument).
 -define(UTILITY_CODE,"%%Utility code
 %% TODO: TO BE IN SEPERATE MODULE").
 -define(UNDEFINED_PROPERTY_CONDITION,"Condition not defined for property ~p~n").
@@ -112,6 +114,9 @@ split(_,_,_,Acc) ->
 test_split(N) ->
   [ (io:format("~p~p ~n" ,[X,split(X)])) || X <- lists:seq(1,N) ].
 
+-spec is_composite(N) -> Bool when
+	N	:: integer() ,
+	Bool :: boolean().
 is_composite(N) ->
 	case split(N) of 
 		[] -> false;
@@ -505,16 +510,78 @@ jacobi_compute(A,P) ->
 	0.
 
 
--spec is_quad_res(N,P) -> Boolean
-     when 
-		  N :: integer(),
-		  P :: odd_prime(),
-		  Boolean :: boolean().
-is_quad_res(N,P) ->
-	case Res = (round(pow_bin(N,(P-1) div 2)) rem P) of
-		1 -> {true, Res};
-		_ -> {false , Res}
-     end.
+%%Lengendre
+-spec legendre(A,N) -> Number when
+		  A 			:: integer(),
+		  N			:: odd_prime(),
+		  Number	   	:: integer().
+legendre(A,N) ->
+	legendre(A,N,1).
+legendre(A,P,Acc) when A =:= 1 ->
+	1;
+legendre(A,P,Acc) when A =:= 0 ->
+	0;
+legendre(A,P,Acc) when A =:= -1 ->
+	case  (is_composite(P)) of 
+		true -> error(bad_legendre_arg);
+		false -> 
+			case P rem 4 of
+				1 -> 1 * Acc;
+				3 -> -1 * Acc;
+				_ -> {bad_argument,P}
+			end
+	end;
+	
+legendre(A,P,Acc) when A  =:= P ->
+	0;
+
+legendre(A,P,Acc) when A =:= 2 ->
+		debug("~pl(~p,~p)~n",[Acc,A,P]),
+		case is_even(P) of 
+		{ok,true} ->{?JACOBI_BAD_ARG,"N cannot be even"} ;
+		{ok,false} ->
+			case (P rem 8) of
+				1 -> 1 * Acc;
+				7 ->  1 * Acc;
+				3 -> -1 * Acc;
+				5 -> -1 * Acc;
+			    _ -> {?JACOBI_BAD_ARG,"legendre property for A",[A,P]}
+			end
+	end;
+
+legendre(A,N,Acc) when is_integer(A),is_integer(N) ->
+	debug("~pl(~p,~p)~n",[Acc,A,N]),
+	case is_even(A) of
+		{ok,true} ->
+			{OddNum,Exp} = div_till_odd(A),
+			%debug("(legendre(~p/~p))^~p , legendre(~p,~p)~n",[2,N,Exp,OddNum,N]),
+			Twores = legendre(2,N,Acc),
+			legendre(OddNum,N,round(math:pow(Twores,Exp))*Acc);
+		{ok,false} ->
+ 			case A > N  of
+				true ->
+					Decomp = A rem N,
+					%io:format("Decomp = ~p~n",[Decomp]),
+  					%debug("(legendre(~p/~p)~n",[Decomp,N]),
+ 					legendre(Decomp,N,Acc);					
+				false ->
+					case is_composite(A) of
+						true -> case hd(split(A)) of {F1,F2} -> io:format("l(~p,~p) * l(~p,~p) ~n",[F1,N,F2,N]),
+																legendre(F1,N,Acc *legendre(F2,N,Acc)); [] -> done end  ;
+						false -> 
+							Flip_res = jacobi_flip(A,N),
+ 							debug("(~p)legendre(~p/~p)~n",[Flip_res,N,A]),
+  							legendre(N,A,Flip_res* Acc)
+					end
+					 
+			end
+	end;
+ 
+
+legendre(_,_,Acc)  -> Acc.
+
+
+				   
 
 %%Jacobi Properties
 -spec jacobi(Args,N) -> Number when
@@ -571,18 +638,6 @@ jacobi_helper(A,N,Acc) when A == 2  ->
 	end;
 	
 
-%% jacobi_helper(A,N,Acc) when A == 2 , N < 8->
-%% 		case is_even(N) of 
-%% 		{ok,true} ->{?JACOBI_BAD_ARG,"N cannot be even"} ;
-%% 		{ok,false} ->
-%% 			case (N rem 8) of
-%% 				1 -> 1 * Acc;
-%% 				7 -> 1  * Acc;
-%% 				3 -> -1 * Acc;
-%% 				5 ->  -1 * Acc;
-%% 			    _ -> {?JACOBI_BAD_ARG,"jacobi property for A",[A,N]}
-%% 			end
-%% 	end;
 jacobi_helper(A,N,Acc) when is_integer(A),is_integer(N) ->
 	debug("Current value for Acc = ~p for j(~p,~p)~n",[Acc,A,N]),
 	case is_even(A) of
