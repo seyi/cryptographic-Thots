@@ -19,10 +19,12 @@
 		 test_least_common_multiple/1,multiply/4,
 		 modular_inverse/3,extended_euclid/2,verify/4,convert2/2,
 		 modular_exponent/4,is_quad_res/2,is_even/1,is_odd/1,jacobi/2,
-		 verify/2]
+		 verify/2,quick_test/4,numeric_rep/2,div_till_odd/1,jacobi_helper/3,pow_bin/2]
 		).
 -define(NOT_YET_IMPLEMENTED,not_yet_implemented).
 -define(V_FAIL,verify_failure).
+-define(V_PASS,verify_passed).
+-define(JACOBI_BAD_ARG,bad_argument).
 -define(UTILITY_CODE,"%%Utility code
 %% TODO: TO BE IN SEPERATE MODULE").
 -define(UNDEFINED_PROPERTY_CONDITION,"Condition not defined for property ~p~n").
@@ -391,25 +393,6 @@ test_least_common_multiple(X,Y) ->
  test_least_common_multiple(L) ->
  	least_common_multiple(L).
 
-%%    Mod = round(math:pow(10,9) + 7),
-%%     round( 
-%%           ((
-%%             (round(X rem Mod)
-%%                * round(Y rem Mod) 
-%%              ) 
-%%                *Mod
-%%            ) 
-%%              /  (gcd(euclid,(X rem Mod),(Y rem Mod))))  / Mod
-%%          );
-    
-%%RSA-576
-%%  1881988129206079638386972394616504398071635633794173827007
-%%    6335642298885971523466548531906060650474304531738801130339
-%%    6716199692321205734031879550656996221305168759307650257059
-
-
-%%RSA-155
-%%1094173864157052742180970732204035761200373294544920599091 3842131476349984288934784717997257891267332497625752899781 833797076537244027146743531593354333897.
 
 extended_euclid(A,B) ->
 	extended_euclid(A,B,1,0,0,1).
@@ -472,12 +455,6 @@ modular_inverse(naive,A,Counter,ModC) when Counter =< (ModC-1)->
 modular_inverse(naive,A,Counter,ModC) when Counter =:= (ModC) ->
 	no_inverse.
 
--spec convert2(BaseType,Number) -> List when
-		  BaseType :: atom(),
-		  Number :: integer(),
-		  List :: list().
-convert2(base2,Number) ->
-	lists:reverse([N - $0 || N <-  integer_to_list(Number,2)]).
 
 %%Repeated square and multiply algorithm
 
@@ -534,7 +511,7 @@ jacobi_compute(A,P) ->
 		  P :: odd_prime(),
 		  Boolean :: boolean().
 is_quad_res(N,P) ->
-	case Res = (round(math:pow(N,(P-1) div 2)) rem P) of
+	case Res = (round(pow_bin(N,(P-1) div 2)) rem P) of
 		1 -> {true, Res};
 		_ -> {false , Res}
      end.
@@ -544,15 +521,95 @@ is_quad_res(N,P) ->
 		Args ::[number()] | integer(),
 		N    :: [odd_number()] | odd_number(),
 		Number :: jacobi_result.
- jacobi(A,N) when is_integer(A),is_integer(N) -> 
-	2;
 
 jacobi(A,N) when is_list(N) andalso is_integer(A) ->
 		3;
 jacobi(Args,N) when is_list(Args) andalso is_integer(N) -> 
 		4;
 jacobi(Args,N) when is_list(Args) andalso is_list(N) -> 
- 5.	
+ 5;
+
+jacobi(A,N)  ->
+	jacobi_helper(A,N,1).
+
+
+jacobi_helper(A,_,Acc) when A == 0 ->
+	0 ;
+jacobi_helper(A,_,Acc) when A == 1 ->
+	1 * Acc;
+jacobi_helper(A,N,Acc) when A == N ->
+	0;
+
+jacobi_helper(A,N,Acc) when A == -1 ->
+	case is_even(N) of
+		{ok,true} -> {?JACOBI_BAD_ARG,N};
+		{ok,false} -> 
+			case N rem 4 of
+		1 -> 1 * Acc;
+		3 -> -1 * Acc;
+		_ -> {bad_argument,N}
+	end  
+		
+	end;
+
+jacobi_helper(A,N,Acc) when N rem 2 == 0 ->
+	{?JACOBI_BAD_ARG,"N cannot be even"};
+
+
+jacobi_helper(A,N,Acc) when A == 2  ->
+	debug("Current value for Acc = ~p for j(~p,~p)~n",[Acc,A,N]),
+		case is_even(N) of 
+		{ok,true} ->{?JACOBI_BAD_ARG,"N cannot be even"} ;
+		{ok,false} ->
+			case (N rem 8) of
+				1 -> 1 * Acc;
+				7 ->  1 * Acc;
+				3 -> -1 * Acc;
+				5 -> -1 * Acc;
+			    _ -> {?JACOBI_BAD_ARG,"jacobi property for A",[A,N]}
+			end
+	end;
+	
+
+%% jacobi_helper(A,N,Acc) when A == 2 , N < 8->
+%% 		case is_even(N) of 
+%% 		{ok,true} ->{?JACOBI_BAD_ARG,"N cannot be even"} ;
+%% 		{ok,false} ->
+%% 			case (N rem 8) of
+%% 				1 -> 1 * Acc;
+%% 				7 -> 1  * Acc;
+%% 				3 -> -1 * Acc;
+%% 				5 ->  -1 * Acc;
+%% 			    _ -> {?JACOBI_BAD_ARG,"jacobi property for A",[A,N]}
+%% 			end
+%% 	end;
+jacobi_helper(A,N,Acc) when is_integer(A),is_integer(N) ->
+	debug("Current value for Acc = ~p for j(~p,~p)~n",[Acc,A,N]),
+	case is_even(A) of
+		{ok,true} ->
+			{OddNum,Exp} = div_till_odd(A),
+			debug("(jacobi(~p/~p))^~p , jacobi(~p,~p)~n",[2,N,Exp,OddNum,N]),
+			Twores = jacobi_helper(2,N,Acc),
+			jacobi_helper(OddNum,N,round(math:pow(Twores,Exp))*Acc);
+		{ok,false} ->
+ 			case A > N  of
+				true ->
+					Decomp = A rem N,
+					io:format("Decomp = ~p~n",[Decomp]),
+  					debug("(Decomposed odd =jacobi(~p/~p)~n",[Decomp,N]),
+ 					jacobi_helper(Decomp,N,Acc);					
+				false ->
+					Flip_res = jacobi_flip(A,N),
+ 					debug("flip ==> (~p)jacobi(~p/~p)~n",[Flip_res,N,A]),
+  					jacobi_helper(N,A,Flip_res* Acc) 
+			end
+	end;
+ 
+
+jacobi_helper(_,_,Acc)  -> Acc.
+
+
+	
 
 %%Utility code
 %% TODO: TO BE IN SEPERATE MODULE
@@ -570,7 +627,11 @@ verify(jacobi_prop,Args) when length(Args) > 1 ->
 	prop_check(jacobi,1,Numer,N),
 	prop_check(jacobi,2,Numer,NProduct) ,
 	prop_check(jacobi,3,AProduct,N),
-	prop_check(jacobi,4,[5,8],33);
+	prop_check(jacobi,4,[5,8],33),
+	prop_check(jacobi,5,5,33),
+	prop_check(jacobi,6,-1,33),
+	prop_check(jacobi,7,2,33),
+	prop_check(jacobi,8,5,33);
 
 %%numerator and prime check (Definition).
 verify(jacobi_prop,Args) when length(Args) =:= 1 ->
@@ -581,7 +642,7 @@ verify(_,Args) ->
 -spec prop_check(Jacobi,Num,A,N) -> {Ok,VerifyAtom} when
 		  Jacobi 		:: atom(),
 		  Num			:: integer(),
-		  A		 		:: [integer()],
+		  A		 		:: [integer()] | integer(),
 		  N 				:: integer() | [integer()],
 		  Ok				:: atom(),
 		  VerifyAtom 	:: atom().
@@ -589,10 +650,10 @@ prop_check(jacobi,Num,A,N) when Num =:= 1 ->
 	case is_list(A) andalso length(A) > 1 of
 		true ->
 			Res = lists:foldl(fun(Elem,Acc) ->
-				jacobi(Elem,N) * Acc
+				jacobi(Elem,case is_list(N) of true->multiply(list,N); false -> N end) * Acc
 				end, 1,A),
 			A2 = multiply(list,A),
-			Res2 = jacobi(A2,N),
+			Res2 = jacobi(A2,case is_list(N) of true->multiply(list,N); false -> N end),
 			debug("Jacobi property (ii) jacobi(~p/~p) == ",
 				  [A2,multiply(list,N)]),
 				%[ io:format("~p/~p  ",[X,multiply(list,N)]) || X<- A],
@@ -609,22 +670,19 @@ prop_check(jacobi,Num,AProduct,N) when Num =:= 2 ->
 	Mul_denom_arg_res = apply_across_args(accum_mul,Fun,AProduct,N),
     case Mul_denom_arg_res =:= jacobi(multiply(list,AProduct),N) of
 		true -> {ok,verify_passed_prop2};
-		false ->{ok,verify_failed_prop2}
+		false ->{ok,verify_failed_prop,concat_str_to_integer("property ",Num," ")}
     end;
 
-prop_check(jacobi,Num,A,N) when Num =:= 3  ->
-		
+prop_check(jacobi,Num,A,N) when Num =:= 3  ->		
         case is_list(N) andalso length(N) > 1 of
 			true ->
 			Res = lists:foldl(fun(Elem,Acc) ->
-				jacobi(A,N) * Acc
+				jacobi(A,case is_list(N) of true->multiply(list,N); false -> N end) * Acc
 				end, 1,N),
 			NProduct = multiply(list,N),
 			Res2 = jacobi(A,NProduct),
 			debug("Jacobi property (iii) jacobi(~p/~p) == ",
 				  [A,multiply(list,N)]),
-				%[ io:format("~p/~p  ",[X,multiply(list,N)]) || X<- A],
-				%io:format(" = ~p~n",[(Res == Res2)]);
 			print_multiple_denumerator_vs_single_numer(N,A,"*",length(N),1),
 			io:format(" = ~p~n",[(Res == Res2)]);
         false ->
@@ -636,8 +694,54 @@ prop_check(jacobi,Num,[A,B],N) when Num =:= 4  ->
 		true -> 
 				 debug("Jacobi Property(iv) jacobi(~p/~p) == jacobi(~p/~p) = ~p~n",
 							  [A,N,B,N,(jacobi(A,N) =:= jacobi(B,N) )]);
-		false ->debug(?UNDEFINED_PROPERTY_CONDITION,[Num])
+		false ->debug(?UNDEFINED_PROPERTY_CONDITION,[Num]),
+				{ok,verify_failed,concat_str_to_integer("property ",Num," ")}
     end;
+
+prop_check(jacobi,Num,A,N) when Num =:= 5 ->
+	debug("Jacobi Property(v) jacobi(~p/~p) == 1 ? = ~p~n",
+							  [A,N,(jacobi(A,N) =:= 1 )]),
+	{ok,(case jacobi(A,N) =:= 1 of true -> ?V_PASS; false -> ?V_FAIL end),concat_str_to_integer("property ",Num," ")};
+prop_check(jacobi,Num,A,N) when Num =:= 6 ->
+		J = jacobi(A,N),
+		debug("Jacobi Property(vi) jacobi(~p/~p) == -1 or 1 ? = ~p~n ...performing further test for this property~n",
+							  [A,N,(case (J =:= -1) or (J =:= 1) of true -> true; false -> false end )]),
+	quick_test(jacobi_property,0,-1,0),
+	{ok,(case J =:= 1 of true -> ?V_PASS; false -> ?V_FAIL end),
+	 concat_str_to_integer("property ",Num," ")};
+
+prop_check(jacobi,Num,A,N) when Num =:= 7 ->
+		J = jacobi(A,N),
+		debug("Jacobi Property(vii) jacobi(~p/~p) == -1 or 1 ? = ~p~n ...performing further test for this property~n",
+							  [A,N,(case (J =:= -1) or (J =:= 1) of true -> true; false -> false end )]),
+	quick_test(jacobi_property,7,-1,50),
+	{ok,(case J =:= 1 of true -> ?V_PASS; false -> ?V_FAIL end),
+	 concat_str_to_integer("property ",Num," ")};
+
+prop_check(jacobi,Num,A,N) when Num =:= 8 ->
+	J = jacobi(A,N),
+	J2 = jacobi(N,A),
+	debug("Jacobi Property(viii) jacobi(~p/~p) == jacobi(~p/~p) ? = ~p~n ...performing further test for this property~n",
+			[A,N,N,A, 
+					case (J2 == J) of true -> true; 
+						false -> 
+							debug("Performing further test...~n
+                                Checking Congruence to  3 mod 4..~n",[]),
+						    case (A rem 4 == 3) andalso (N rem 4 == 3) of 
+							  true -> debug("Jacobi(~p/~p) and jacobi(~p/~n) ==? ~p~n",
+								[A,N,N,A,
+								  case (jacobi(A,N)) =:= -(jacobi(N,A))  of
+									  true -> true; 
+									  false-> error(?V_FAIL ++", 3 mod 4 congurnce failed for property 8 ")
+								  end]) ;
+							  false -> error("Bad Jacobi object")
+							end
+					end ]),
+	{ok, ?V_PASS,
+	 concat_str_to_integer("property ",Num," ")};
+	
+
+
 
 prop_check(jacobi,_,Num,_) -> {error,unknown_property,Num}.
 
@@ -703,13 +807,45 @@ apply_across_args(accum_mul,Function,Args,N) when (length(Args) > 1)  ->
 
 %%Utility code
 %% TODO: TO BE IN SEPERATE MODULE
+-spec convert2(BaseType,Number) -> List when
+		  BaseType :: atom(),
+		  Number :: integer(),
+		  List :: list().
+convert2(base2,Number) ->
+	lists:reverse([N - $0 || N <-  integer_to_list(Number,2)]).
+
+-spec numeric_rep(Number,Base) -> [{Base,Exp,Rep}] when
+		  Number :: [integer()],
+		  Base 	 :: integer(),
+		  Exp 	 :: integer(),
+		  Rep    :: integer().
+numeric_rep(Number,Base) ->
+	numeric_rep(Number,Base,[],0).
+
+numeric_rep([H|T],Base,Acc,Counter) ->
+	numeric_rep(T,Base,[{Base,Counter,H - $0} | Acc ],Counter+1);
+numeric_rep([],Base,Acc,Counter) -> lists:reverse(Acc).
+	
+-spec is_even(Number) -> {Atom,Boolean} when
+		  Number 	:: integer(),
+		  Atom	 	:: atom(),
+		  Boolean	:: boolean().
 is_even(Number) when is_integer(Number) , Number >= 0 ->
     {ok,(Number band 1 ) == 0};
 is_even(Number) -> {bad_argument,Number}.
+-spec is_odd(Number) -> {Atom,Boolean} when
+		  Number 	:: integer(),
+		  Atom	 	:: atom(),
+		  Boolean	:: boolean().
+
 is_odd(Number) when is_integer(Number) , Number >= 0 ->
 	{ok,(Number band 1) == 1};
 is_odd(Number) -> {bad_argument,Number}.
 
+-spec multiply(Atom,List) -> Integer when
+	Atom		:: atom(),
+	List		:: list(),
+	Integer	:: integer().
 multiply(list,List) ->
 	lists:foldl(fun(A,Acc) -> 
 					Acc * A		
@@ -762,6 +898,75 @@ print_multiple_denumerator_vs_single_numer([H|T],Numer,Op,DenomL,Counter) ->
 
 print_multiple_denumerator_vs_single_numer([],Numer,Op,DenomL,Counter) ->
 	io:format(" ").
+
+concat_str_to_integer(String,Integer,Sep) ->
+	String++ Sep ++  integer_to_list(Integer).
+
+quick_test(jacobi_property,Num,A,NSeq) when Num =:= 6 ->  
+	%[io:format("~p~n",[{integer_to_list(A) ++ "," ++ integer_to_list(X) ++ " = " ++integer_to_list(round(math:pow(A,(X-1) div 2)))} || X <- lists:seq(3,NSeq) , X rem 2 == 1, crypto_thots:is_composite(X)])],
+	[{A,X,(round(math:pow(A,(X-1) div 2)))} || X <- lists:seq(3,NSeq) , X rem 2 == 1, crypto_thots:is_composite(X)];
+
+
+quick_test(jacobi_property,Num,A,NSeq) when Num =:= 0 ->
+	Res =  quick_test(jacobi_property,6,-1,100) ,
+	[ {A,X,case (X rem 4 == 1) of true -> true; false -> error(?V_FAIL++ " N Mod 4,Property 6") end}  ||  {A,X,R} <- Res , R =:= 1 ],
+	debug("Jacobi Property(vi) jacobi(-1/N) == 1 MOD 4 ? = true ~n ...performing further test for this property~n",[]),
+	%[A,N,(case (J =:= -1) or (J =:= 1) of true -> true; false -> false end )]),
+	[ {A,X,case (X rem 4 == 3) of 
+			   true -> true; 
+			   false -> error(?V_FAIL++ " N Mod 4,Property 6") 
+		   end}  ||  {A,X,R} <- Res , R =:= -1 ],
+		  debug("Jacobi Property(vi) jacobi(-1/N) == 3 MOD 4 ? = true ~n",[]);
+
+
+quick_test(jacobi_property,Num,A,NSeq=50) when Num =:= 7 ->
+	Res = [{X,round(math:pow(-1,round(math:pow(X,2) -1) div 8))} || X <- lists:seq(3,NSeq) , X rem 2 == 1, crypto_thots:is_composite(X)],
+		[ {A,X,case (X rem 8 == 1) or (X rem 8 == 7) of true -> true; false -> error(?V_FAIL++ " N Mod 4,Property 6") end}  ||  {A,X,R} <- Res , R =:= 1 ],
+	debug("Jacobi Property(vi) jacobi(2/N) == 1 or 7 MOD 8  ? = true ~n ...performing further test for this property~n",[]),
+	%[A,N,(case (J =:= -1) or (J =:= 1) of true -> true; false -> false end )]),
+	[ {A,X,case (X rem 8 == 3) or (X rem 8 == 5) of 
+			   true -> true; 
+			   false -> error(?V_FAIL++ " N Mod 8,Property 7") 
+		   end}  ||  {A,X,R} <- Res , R =:= -1 ],
+		  debug("Jacobi Property(vii) jacobi(2/N) == 3 or 5 MOD 8 ? = true ~n",[]);
+
+quick_test(jacobi_property,_,_,_) ->
+	not_yet_implemented.
+
+
+-spec div_till_odd(BigNum) -> {OddNum,Exp} when 
+		  BigNum :: integer(),
+		  OddNum :: integer(),
+		  Exp    :: integer(). 
+div_till_odd(BigNum) ->
+	Div_till_odd = fun The_fun(BigNum,Acc) when BigNum rem 2 == 0 ->  The_fun(BigNum bsr 1,Acc+1)  ; The_fun(BigNum,Acc) -> {BigNum,Acc} end,
+	Div_till_odd(BigNum,0).
+		  
+ 
+-spec jacobi_flip(M,N) -> Res when
+		  M 		:: integer(),
+		  N 		:: integer(),
+	      Res	:: jacobi_result().
+jacobi_flip(M,N) ->
+	%debug("flip => jacobi(~p/~p)~n",[N,M]),
+	case (M rem 4) == 3 andalso (N rem 4) == 3 of
+		true -> -1;
+		false -> 1
+	end.
+
+pow_bin(X,N) -> 
+	pb(X,N,1).
+pb(X,N,Acc) when (N rem 2) =:= 0 -> 
+	pb(X*X, N div 2 ,Acc) ; 
+pb(X,N,Acc) -> 
+	NewAcc = Acc * X,
+	case  N div 2 of
+		0 -> NewAcc; 
+		_ -> pb(X*X,N div 2,Acc * X) 
+	end.
+
+
+
 
 
 
