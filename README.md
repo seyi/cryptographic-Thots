@@ -21,3 +21,7 @@ Contains the following algorithm in pure Erlang:
 - Naive Modulo Inverse
 - Modulo Inverse using Extended Euclid Algorithm
 - Fast Modular exponentiantion
+- The legendre symbol
+- The Jacobi symbol
+- Large N exponent support
+- Other utility maths functions
