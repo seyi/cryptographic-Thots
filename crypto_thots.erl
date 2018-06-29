@@ -81,19 +81,9 @@ computational_equivalent(A,B) ->
 find_prime_factorization(Number) ->
 	error("Not yet implemented").
 	
-%%Def 3.3. given a positive integer, n, find it's prime factorization,
-%% that is write n = psub1expe1 ... psubkexpk where the psubiare pairwise,
-%%distinct primes and each expi >= 1
-%% remark 3.4 (primality versus factoring) ...beforeattempting to factor
-%% an integer N, the integer should be tested to make sure that it is
-%% indeed composite
 integer_factorization_problem(N) ->
 	Primes = find_prime_factorization(N).
 	
-%%Remark 3.5..Non trivial factorization of N of the from
-%% n = ab , where 1 < a < n and a < b < n;
-%% a and b are said to be no-trivial factors of n.
-%% Here a and b are not necessariliy prime
 
 split(N) ->
 	NRoot = round(math:sqrt(N)),
@@ -554,15 +544,18 @@ legendre(A,N,Acc) when is_integer(A),is_integer(N) ->
 	case is_even(A) of
 		{ok,true} ->
 			{OddNum,Exp} = div_till_odd(A),
-			%debug("(legendre(~p/~p))^~p , legendre(~p,~p)~n",[2,N,Exp,OddNum,N]),
-			Twores = legendre(2,N,Acc),
-			legendre(OddNum,N,round(math:pow(Twores,Exp))*Acc);
+			legendre(OddNum,N,
+						  round(math:pow(case N rem 8 of 
+											  1 -> 1;
+											  7 -> 1;
+											  3 -> -1;
+											  5 -> -1;
+											  _ -> error("bad argument")
+ 											 end,Exp))*Acc);
 		{ok,false} ->
  			case A > N  of
 				true ->
 					Decomp = A rem N,
-					%io:format("Decomp = ~p~n",[Decomp]),
-  					%debug("(legendre(~p/~p)~n",[Decomp,N]),
  					legendre(Decomp,N,Acc);					
 				false ->
 					case is_composite(A) of
@@ -579,9 +572,6 @@ legendre(A,N,Acc) when is_integer(A),is_integer(N) ->
  
 
 legendre(_,_,Acc)  -> Acc.
-
-
-				   
 
 %%Jacobi Properties
 -spec jacobi(Args,N) -> Number when
@@ -644,8 +634,16 @@ jacobi_helper(A,N,Acc) when is_integer(A),is_integer(N) ->
 		{ok,true} ->
 			{OddNum,Exp} = div_till_odd(A),
 			debug("(jacobi(~p/~p))^~p , jacobi(~p,~p)~n",[2,N,Exp,OddNum,N]),
-			Twores = jacobi_helper(2,N,Acc),
-			jacobi_helper(OddNum,N,round(math:pow(Twores,Exp))*Acc);
+			%Twores = jacobi_helper(2,N,Acc),
+			jacobi_helper(OddNum,N,
+						  round(math:pow(case N rem 8 of 
+											  1 -> 1;
+											  7 -> 1;
+											  3 -> -1;
+											  5 -> -1;
+											  _ -> error("bad argument")
+ 											 end,Exp))*Acc);
+			
 		{ok,false} ->
  			case A > N  of
 				true ->

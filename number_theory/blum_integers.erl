@@ -34,7 +34,7 @@ sq_mod_query(naive,Value, P) ->
 
 
 
-sq_q_helper(Value,P,InitialFrom,InitialTo,Limit,Res) when Res == false ->
+sq_q_helper(Value,P,InitialFrom,InitialTo,Limit,Res) when Res == false , InitialFrom < Limit->
 	Table = sq_tab(P,InitialFrom,InitialTo),
 	case lists:keysearch(Value,2,Table) of
 		false ->  sq_q_helper(Value,P,InitialFrom+1,InitialTo+?GEN_SEED+1,Limit,false);
@@ -42,6 +42,7 @@ sq_q_helper(Value,P,InitialFrom,InitialTo,Limit,Res) when Res == false ->
 			sq_q_helper(Value,P,InitialFrom,InitialTo,Limit,{N,SRes})
     end	
 	;
+
 
 sq_q_helper(_,_,_,_,_,Res)  ->
 	Res.
