@@ -1,5 +1,5 @@
 %% @author Seyi Akadri
-%% @doc .
+%% @doc group.
 
 
 -module(group).
